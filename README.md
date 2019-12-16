@@ -130,4 +130,4 @@ You should now see a car's position and an event in the webapp.
 
 ## Solution
 
-Please review the [Solution: MAT Fan Engagement Coding Challenge](../SOLUTION_SRE_README.md) for more information.
+Please review the [Solution: MAT Fan Engagement Coding Challenge](./SOLUTION_SRE_README.md) for more information.
