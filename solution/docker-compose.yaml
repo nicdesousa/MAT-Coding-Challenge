@@ -1,0 +1,12 @@
+version: '2'
+
+services:
+
+  hello:
+    image: hello-world
+
+#  mosquitto:
+#    image: eclipse-mosquitto:1.6.2
+#    ports:
+#    - "1883:1883"
+#    - "9001:9001"

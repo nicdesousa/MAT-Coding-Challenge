@@ -1,0 +1,6 @@
+*
+!src/main/docker/wait-for-it.sh
+!src/main/docker/run-java.sh
+!target/*-runner
+!target/*-runner.jar
+!target/lib/*

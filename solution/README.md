@@ -1,0 +1,1 @@
+Please review the [Solution: MAT Fan Engagement Coding Challenge](../SOLUTION_SRE_README.md) for more information.

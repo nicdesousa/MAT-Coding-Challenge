@@ -1,0 +1,68 @@
+version: "3"
+
+services:
+  # MQTT broker
+  broker:
+    image: toke/mosquitto
+    ports:
+      - "1883:1883/tcp"
+
+  # GPS coords source
+  source_gps:
+    image: mclarenappliedtechnologies/recruitment.fanengagement.streamgenerator
+    env_file:
+      - ./source_gps.env
+      - ./mqtt.env
+      - ./cars.env
+    ports:
+      - "8081:8080/tcp"
+
+  # Write to websocket
+  mqtt_to_websocket:
+    image: mclarenappliedtechnologies/recruitment.fanengagement.forwarder
+    env_file:
+      - ./mqtt.env
+    ports:
+      - "8080:8080/tcp"
+      
+  # Webapp
+  webapp:
+    image: mclarenappliedtechnologies/recruitment.fanengagement.webapp
+    volumes:
+      # change "http://127.0.0.1:8080/ws" to "http://"+window.location.hostname+":8080/ws"
+      - $PWD/main.8e11a759906efd075879.js:/usr/share/nginx/html/main.8e11a759906efd075879.js
+    ports:
+      - "8084:8084/tcp"
+
+  # Zookeeper
+  zookeeper:
+    image: strimzi/kafka:0.11.3-kafka-2.1.0
+    command: [
+      "sh", "-c",
+      "bin/zookeeper-server-start.sh config/zookeeper.properties"
+    ]
+    ports:
+      - "2181:2181"
+    environment:
+      LOG_DIR: /tmp/logs
+
+  # Kafka
+  kafka:
+    image: strimzi/kafka:0.11.3-kafka-2.1.0
+    command: [
+      "sh", "-c",
+      "bin/kafka-server-start.sh config/server.properties --override listeners=$${KAFKA_LISTENERS} --override advertised.listeners=$${KAFKA_ADVERTISED_LISTENERS} --override zookeeper.connect=$${KAFKA_ZOOKEEPER_CONNECT}"
+    ]
+    ports:
+      - "9092:9092"
+    environment:
+      LOG_DIR: "/tmp/logs"
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+
+  # MAT Coding Challenge: Solution
+  telemetry:
+    image: nicdesousa/mat-coding-challenge:latest
+    environment: 
+      QUARKUS_PROFILE: dev

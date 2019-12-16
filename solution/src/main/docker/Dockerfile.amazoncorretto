@@ -1,0 +1,10 @@
+FROM amazoncorretto:8
+RUN yum install nc -y
+COPY src/main/docker/run-java.sh /deployments/run-java.sh
+COPY src/main/docker/wait-for-it.sh /deployments/wait-for-it.sh
+# the source might not have the exec bit set...
+RUN chmod +x /deployments/*.sh
+COPY target/lib/* /deployments/lib/
+COPY target/*-runner.jar /deployments/app.jar
+ENV JAVA_OPTIONS=-Dquarkus.http.host=0.0.0.0
+ENTRYPOINT ["/deployments/wait-for-it.sh", "broker:1883", "--", "/deployments/run-java.sh"]

@@ -1,0 +1,8 @@
+FROM fabric8/java-jboss-openjdk8-jdk
+ENV JAVA_OPTIONS=-Dquarkus.http.host=0.0.0.0
+COPY target/lib/* /deployments/lib/
+COPY target/*-runner.jar /deployments/app.jar
+COPY src/main/docker/wait-for-it.sh /deployments/wait-for-it.sh
+# the source might not have the exec bit set...
+RUN chmod +x /deployments/*.sh
+ENTRYPOINT ["/deployments/wait-for-it.sh", "broker:1883", "--", "/deployments/run-java.sh"]
