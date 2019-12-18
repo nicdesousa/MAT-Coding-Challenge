@@ -24,6 +24,8 @@ services:
       - ./mqtt.env
     ports:
       - "8080:8080/tcp"
+      # support for clients behind a restrictive corporate proxy server
+      - "443:8080/tcp"
       
   # Webapp
   webapp:
@@ -33,6 +35,8 @@ services:
       - $PWD/main.8e11a759906efd075879.js:/usr/share/nginx/html/main.8e11a759906efd075879.js
     ports:
       - "8084:8084/tcp"
+      # support for clients behind a restrictive corporate proxy server
+      - "80:8084/tcp"
 
   # Zookeeper
   zookeeper:

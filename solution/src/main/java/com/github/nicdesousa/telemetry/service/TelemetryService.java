@@ -1,6 +1,6 @@
 package com.github.nicdesousa.telemetry.service;
 
-import com.github.nicdesousa.mat.domain.Car;
+import com.github.nicdesousa.telemetry.domain.Car;
 import com.github.nicdesousa.telemetry.domain.CarCoordinate;
 import com.github.nicdesousa.telemetry.domain.CarStatus;
 import com.github.nicdesousa.telemetry.domain.Event;

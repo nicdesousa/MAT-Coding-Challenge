@@ -1,4 +1,4 @@
-package com.github.nicdesousa.mat.domain;
+package com.github.nicdesousa.telemetry.domain;
 
 import com.github.nicdesousa.telemetry.domain.CarCoordinate;
 import com.github.nicdesousa.telemetry.domain.Location;
@@ -17,7 +17,7 @@ public class Car {
     private double curSpeedMPH = 0D;
 
     public Car(final CarCoordinate carCoordinate) {
-        carIndex = carCoordinate.getCarIndex();
+        this.setCarIndex(carCoordinate.getCarIndex());
         this.setCurLocation(carCoordinate.getLocation());
         this.setLastUpdateTimestamp(carCoordinate.getTimestamp());
     }
