@@ -10,6 +10,8 @@ services:
   # GPS coords source
   source_gps:
     image: mclarenappliedtechnologies/recruitment.fanengagement.streamgenerator
+    links: 
+      - broker
     env_file:
       - ./source_gps.env
       - ./mqtt.env
