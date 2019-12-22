@@ -24,17 +24,17 @@ public class CarCoordinateService {
     @Incoming("mqtt-carCoordinates-sub")
     @Outgoing("kafka-carCoordinates-pub")
     @Broadcast
-    public KafkaMessage<Long, JsonObject> consumeMqttCarCoordinate(byte[] raw) {
-        CarCoordinate carCoordinate = Json.decodeValue(new String(raw), CarCoordinate.class);
-        log.debug("Received MQTT CarCoordinate: {}", carCoordinate);
+    public KafkaMessage<Long, JsonObject> consumeMqttCarCoordinate(final byte[] rawMessage) {
+        final CarCoordinate carCoordinate = Json.decodeValue(new String(rawMessage), CarCoordinate.class);
+        log.debug("Received MQTT CarCoordinate: {}", carCoordinate.toString());
         // publish carCoordinate to Kafka
         return KafkaMessage.of(carCoordinate.getTimestamp(), JsonObject.mapFrom(carCoordinate));
     }
 
     @Incoming("kafka-carCoordinates-sub")
-    public CompletionStage<Void> consumeKafkaCarCoordinateAsync(KafkaMessage<Long, JsonObject> message) {
+    public CompletionStage<Void> consumeKafkaCarCoordinateAsync(final KafkaMessage<Long, JsonObject> message) {
         return CompletableFuture.runAsync(() -> {
-            CarCoordinate carCoordinate = message.getPayload().mapTo(CarCoordinate.class);
+            final CarCoordinate carCoordinate = message.getPayload().mapTo(CarCoordinate.class);
             log.debug("Received Kafka CarCoordinate: {}", carCoordinate.toString());
             // process the carCoordinate
             telemetryService.processCarCoordinate(carCoordinate);

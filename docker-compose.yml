@@ -26,7 +26,7 @@ services:
       - ./mqtt.env
     ports:
       - "8080:8080/tcp"
-      # support for clients behind a restrictive corporate proxy server
+      # support for clients behind a restrictive network or corporate proxy server
       - "443:8080/tcp"
       
   # Webapp
@@ -34,10 +34,12 @@ services:
     image: mclarenappliedtechnologies/recruitment.fanengagement.webapp
     volumes:
       # change "http://127.0.0.1:8080/ws" to "http://"+window.location.hostname+":8080/ws"
-      - $PWD/main.8e11a759906efd075879.js:/usr/share/nginx/html/main.8e11a759906efd075879.js
+      #- $PWD/main.8080.js:/usr/share/nginx/html/main.8e11a759906efd075879.js
+      # change "http://127.0.0.1:8080/ws" to "http://"+window.location.hostname+":443/ws"
+      - $PWD/main.443.js:/usr/share/nginx/html/main.8e11a759906efd075879.js
     ports:
       - "8084:8084/tcp"
-      # support for clients behind a restrictive corporate proxy server
+      # support for clients behind a restrictive network or corporate proxy server
       - "80:8084/tcp"
 
   # Zookeeper
@@ -69,6 +71,6 @@ services:
 
   # MAT Coding Challenge: Solution
   telemetry:
-    image: nicdesousa/mat-coding-challenge:latest
+    image: nicdesousa/mat-coding-challenge:${TELEMETRY_IMAGE_TAG:-latest}
     environment: 
       QUARKUS_PROFILE: dev

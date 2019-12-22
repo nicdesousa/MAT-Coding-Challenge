@@ -19,32 +19,37 @@ public class HaversineTest {
         try {
             assertEquals(expectedDistance, Haversine.distance(startLat, startLong, endLat, endLong)); // start to end
             assertEquals(expectedDistance, Haversine.distance(endLat, endLong, startLat, startLong)); // end to start
-        } catch (Haversine.InputValidationException e) {
-            e.printStackTrace();
+        } catch (final InputValidationException e) {
             fail();
         }
     }
 
     /**
-     * Test if the {@link Haversine#distance} method validates the latitude parameters correctly
+     * Test if the {@link Haversine#validateCoordinate} method validates the latitude parameter correctly
      */
     @Test
     void testLatitudeRange() {
-        Throwable exception = assertThrows(Haversine.InputValidationException.class, () -> Haversine.distance(-91D, 0, 0, 0));
-        assertEquals(Haversine.ERROR_LATITUDE, exception.getMessage());
-        Throwable exception2 = assertThrows(Haversine.InputValidationException.class, () -> Haversine.distance(0, 0, 91D, 0));
-        assertEquals(Haversine.ERROR_LATITUDE, exception2.getMessage());
+        assertDoesNotThrow(() -> Haversine.validateCoordinate(-90D, 0D));
+        final Throwable e1 = assertThrows(InputValidationException.class, () -> Haversine.validateCoordinate(-91D, 0D));
+        assertEquals(Haversine.ERROR_LATITUDE, e1.getMessage());
+
+        assertDoesNotThrow(() -> Haversine.validateCoordinate(90D, 0D));
+        final Throwable e2 = assertThrows(InputValidationException.class, () -> Haversine.validateCoordinate(91D, 0D));
+        assertEquals(Haversine.ERROR_LATITUDE, e2.getMessage());
     }
 
     /**
-     * Test if the {@link Haversine#distance} method validates the longitude parameters correctly
+     * Test if the {@link Haversine#validateCoordinate} method validates the longitude parameter correctly
      */
     @Test
     void testLongitudeRange() {
-        Throwable exception = assertThrows(Haversine.InputValidationException.class, () -> Haversine.distance(0, -181D, 0, 0));
-        assertEquals(Haversine.ERROR_LONGITUDE, exception.getMessage());
-        Throwable exception2 = assertThrows(Haversine.InputValidationException.class, () -> Haversine.distance(0, 0, 0, 181D));
-        assertEquals(Haversine.ERROR_LONGITUDE, exception2.getMessage());
+        assertDoesNotThrow(() -> Haversine.validateCoordinate(0D, -180D));
+        final Throwable e1 = assertThrows(InputValidationException.class, () -> Haversine.validateCoordinate(0D, -181D));
+        assertEquals(Haversine.ERROR_LONGITUDE, e1.getMessage());
+
+        assertDoesNotThrow(() -> Haversine.validateCoordinate(0D, 180D));
+        final Throwable e2 = assertThrows(InputValidationException.class, () -> Haversine.validateCoordinate(0D, 181D));
+        assertEquals(Haversine.ERROR_LONGITUDE, e2.getMessage());
     }
 
 

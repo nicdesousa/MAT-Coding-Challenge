@@ -22,30 +22,30 @@ public class EventsService {
     private FlowableEmitter<Message<JsonObject>> emitter;
     private Flowable<Message<JsonObject>> outgoingStream;
 
-    public void publish(Event event) {
+    public void publish(final Event event) {
         log.debug("Publishing MQTT Event: {}", event.toString());
         emitter.onNext(Message.of(JsonObject.mapFrom(event)));
     }
 
     @PostConstruct
-    void init() {
-        outgoingStream = Flowable.create(emitter -> this.emitter = emitter, BackpressureStrategy.BUFFER);
+    public void init() {
+        outgoingStream = Flowable.create(e -> this.emitter = e, BackpressureStrategy.BUFFER);
     }
 
     @PreDestroy
-    void dispose() {
+    public void dispose() {
         emitter.onComplete();
     }
 
     @Outgoing("EventsService")
-    Publisher<Message<JsonObject>> produceMessage() {
+    public Publisher<Message<JsonObject>> produceMessage() {
         return outgoingStream;
     }
 
     @Incoming("EventsService")
     @Outgoing("mqtt-Events-pub")
-    Message<JsonObject> transform(Message<JsonObject> arg) {
-        return arg;
+    public Message<JsonObject> transform(final Message<JsonObject> msg) {
+        return msg;
     }
 
 }

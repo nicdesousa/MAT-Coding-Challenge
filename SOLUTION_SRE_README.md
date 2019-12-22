@@ -12,7 +12,7 @@ The `Telemetry Solution` for the coding challenge has been implemented in Java a
 
 - Kafka as both the streaming platform and persistent data store (/archive):
     - **Motivation**
-    - This may seem counter-intuitive at first. Kindly note, however, that Kafka is a `streaming platform` and not a "traditional" `messaging system` where messages are deleted from queues once they've been successfully consumed.
+    - Using Kafka for persistent storage may seem counter-intuitive at first. Kindly note, however, that Kafka is a `streaming platform` and not a "traditional" `messaging system` where messages are deleted from queues once they've been successfully consumed.
     - There are three primary differences between Kafka and traditional messaging systems:
         - Kafka stores a persistent log which can be re-read and kept indefinitely.
         - Kafka is built as a modern distributed system: it runs as a cluster, can expand or contract elastically, and replicates data internally for fault-tolerance and high-availability.
@@ -35,20 +35,21 @@ The `Telemetry Solution` for the coding challenge has been implemented in Java a
     - Quarkus can compile Java bytecode to native OS binaries with extremely impressive results:
     ![](https://quarkus.io/assets/images/quarkus_metrics_graphic_bootmem_wide.png)
     - **Implications**
-    - Using Quarkus required me to invest some time to learn a new framework.
+    - Using Quarkus may require a relatively small invest of time to learn a new framework.
+    - The building of [native binaries](https://quarkus.io/guides/building-native-image) can be very slow. As such, it is recommended to build OpenJVM-based container images during development and to build native images for deployment on longer-lived environments.
 
 ### Description of the core services and logic in the solution
 
-Working from the diagram above, the `Telemetry Solution` provides:
+Working from the architecture diagram above, the `Telemetry Solution` provides:
 
 - The [CarCoordinateService](./solution/src/main/java/com/github/nicdesousa/telemetry/service/CarCoordinateService.java) that subscribes to the `carCoordinate` MQTT topic (provided by the `broker` service) and streams the consumed telemetry data to a `carCoordinate` topic in the `kafka` service.  
     - This service also subscribes to the `carCoordinate` topic (provided by the `kafka` service) and asynchronously consumes and processes the `carCoordinate` stream to perform the telemetry data processing.
 
 - The [TelemetryService](./solution/src/main/java/com/github/nicdesousa/telemetry/service/TelemetryService.java) that processes the `carCoordinate`'s data stream and:
-    - Calculates the total distance that each [Car](./solution/src/main/java/com/github/nicdesousa/telemetry/domain/Car.java) has travelled using the [Haversine](./solution/src/main/java/com/github/nicdesousa/telemetry/util/Haversine.java) formula.
+    - Calculates the [speed](./solution/src/main/java/com/github/nicdesousa/telemetry/util/Speed.java) and total distance that each [Car](./solution/src/main/java/com/github/nicdesousa/telemetry/domain/Car.java) has travelled using the [Haversine](./solution/src/main/java/com/github/nicdesousa/telemetry/util/Haversine.java) formula.
     - Maintains an ordered list of Car's (sorted by total distance travelled) and:
         - Calculates and publishes MQTT [CarStatus](./solution/src/main/java/com/github/nicdesousa/telemetry/domain/CarStatus.java) topic updates (with the [CarStatusService](./solution/src/main/java/com/github/nicdesousa/telemetry/service/CarStatusService.java)) for both the speed and position of each Car.
-        - Detects and publishes MQTT [Events](./solution/src/main/java/com/github/nicdesousa/telemetry/domain/Event.java) topic updates (with the [EventsService](./solution/src/main/java/com/github/nicdesousa/telemetry/service/EventsService.java)) for any Car's that have been overtaken.
+        - Detects and publishes MQTT [Events](./solution/src/main/java/com/github/nicdesousa/telemetry/domain/Event.java) topic updates (with the [EventsService](./solution/src/main/java/com/github/nicdesousa/telemetry/service/EventsService.java)) for every Car that has overtaken another Car.
 
 ### Building and running the code locally
 
@@ -56,37 +57,48 @@ Working from the diagram above, the `Telemetry Solution` provides:
 
 * [docker](https://docs.docker.com/)
 * [docker-compose](https://docs.docker.com/compose/)
+* [OpenJDK 1.8](https://openjdk.java.net/)
+* [Apache Maven](https://maven.apache.org/)
+* A Linux-based environment (recommended)
+* *Or* Windows 10 with WSL 1/2
 
-A bash script has been provided to automate the code compilation, testing and execution of docker-compose:
+A `bash` script has been provided to automate the code compilation, testing and execution of docker-compose:
 
-```console
+```bash
 ./buildAndRun.sh
+# -- OR, use the following for the native binary:
+./buildAndRunNative.sh
 ```
 
-Open: <a href="http://localhost:8084" target="_blank">http://localhost:8084</a>
+Open: [http://localhost:8084](http://localhost:8084)
 
 Press `Control+C` to stop docker-compose.
 
-The code includes Unit Tests for the [Haversine](./solution/src/test/java/com/github/nicdesousa/telemetry/util/HaversineTest.java) formula implementation, since this was the most complex part of the implementation that would benefit from dedicated static testing.
+The code includes Unit Tests for the:
+
+* [Haversine](./solution/src/test/java/com/github/nicdesousa/telemetry/util/HaversineTest.java) formula implementation,
+* [Speed](./solution/src/test/java/com/github/nicdesousa/telemetry/util/SpeedTest.java) calculations.
 
 The source code can be compiled and tested by running:
 
-```console
+```bash
 cd solution
 ./build.sh
+# -- OR, use the following for the native binary:
+./buildNative.sh
 ```
 
 ### Deploying and running the code on AWS
 
-> Note: I would normally automate the provisioning and deployment, but doing so (in this case) will require exposing **your** credentials and access to AWS services/resources to potentially dodgy code/scripting/etc. that has been provided by a third-party. I will **not** run untrusted provisioning/deployment code, and naturally I wouldn't expect you to do this.
+> Note: I would normally automate the provisioning and deployment with CF, TF, CLI, etc., but doing so (in this case) would require **you** to trust and then run potentially *dodgy* automation code and/or templates (etc.) on *your* AWS services/resources. This is obviously an extremely bad idea, and I wouldn't expect or recommend that anyone does this.
 
-1. Login to your AWS Console: <a href="https://aws.amazon.com" target="_blank">https://aws.amazon.com</a>
-2. <a href="https://eu-west-2.console.aws.amazon.com/ec2/v2/home?region=eu-west-2#LaunchInstanceWizard:" target="_blank">Click here</a> to create a new EC2 instance
+1. Login to your AWS Console and change to the `London` region: [https://aws.amazon.com](https://aws.amazon.com)
+2. [Click here](https://eu-west-2.console.aws.amazon.com/ec2/v2/home?region=eu-west-2#LaunchInstanceWizard:) to create a new EC2 instance
 4. Follow the onscreen prompts to provision a new EC2 instance with:
-    - Image: Amazon Linux 2 AMI (HVM), SSD Volume Type (ami-05f37c3995fffb4fd)
-    - Instance Type: t2.micro
+    - Image: `Amazon Linux 2 AMI (HVM), SSD Volume Type` (ami-05f37c3995fffb4fd)
+    - Instance Type: `t2.micro`
     - On the `Instance Details` page, paste the following script into the `User Data` textbox under `Advanced Settings`:
-```console
+```bash
 #!/bin/bash
 # update the system and install required packages
 yum update -y
@@ -134,18 +146,20 @@ The Solution to the MAT Coding Challenge has now been deployed to a single EC2 I
 ![](./images/MAT-Solution-Architecture.png)
 
 11. When you're done, please remember to terminate your EC2 instance:
-    - <a href="https://eu-west-2.console.aws.amazon.com/ec2/v2/home?region=eu-west-2#Instances:sort=instanceId" target="_blank">Click here</a> to view your AWS EC2 instances
+    - [Click here](https://eu-west-2.console.aws.amazon.com/ec2/v2/home?region=eu-west-2#Instances:sort=instanceId) to view your AWS EC2 instances
     - Right-click on your EC2 instance and select: `Instance State`->`Terminate`
 
 ### AWS Production Deployment Architecture
 
 While it is out of scope for this challenge, the diagram below is an example of what a production solutions architecture could look like when applying the best-practices from the [AWS Well-Architected Framework](https://aws.amazon.com/architecture/well-architected/).
 
-In this case, we use the existing containerised services (i.e. no code changes) and leverage ECS clusters with auto-scaling groups to provide a low-maintenance, secure, reliable, performant, and cost-effective AWS-based solution.
+In this case, we use the existing containerised services (i.e. no code changes) and leverage [ECS clusters](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/Welcome.html) with auto-scaling groups to provide a low-maintenance, secure, reliable, performant, and cost-effective AWS-based solution.
 
 ![](./images/MAT-HA-Architecture.png)
 
-## The Final Product: MAT Coding Challenge Dashboard
+## Review of the Solution
+
+### The MAT Coding Challenge Dashboard
 
 ![](./images/MAT-Coding-Challenge-Dashboard.png)
 
@@ -155,4 +169,3 @@ In this case, we use the existing containerised services (i.e. no code changes) 
 
 ![](./images/EC2-Instance-HTOP.png)
 
-Very impressive results, considering the workload that is running on this t2.micro instance!

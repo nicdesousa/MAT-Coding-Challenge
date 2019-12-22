@@ -5,13 +5,17 @@ import com.github.nicdesousa.telemetry.domain.CarCoordinate;
 import com.github.nicdesousa.telemetry.domain.CarStatus;
 import com.github.nicdesousa.telemetry.domain.Event;
 import com.github.nicdesousa.telemetry.util.Haversine;
+import com.github.nicdesousa.telemetry.util.InputValidationException;
+import com.github.nicdesousa.telemetry.util.Speed;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @ApplicationScoped
@@ -22,21 +26,22 @@ public class TelemetryService {
     @Inject
     public EventsService eventsService;
     // identity key lookup map of Car's for which CarCoordinate messages have been received
-    private final HashMap<Integer, Car> cars = new HashMap<>();
+    private final Map<Integer, Car> cars = new ConcurrentHashMap<>();
     // sorted list of Car positions by total distance travelled in descending order
-    private final ArrayList<Car> sortedCarPositions = new ArrayList<>();
+    private final List<Car> sortedCarPositions = new ArrayList<>();
 
     /**
-     * Process CarCoordinate telemetry messages and publish aggregated and enriched data for each Car's position, speed, and overtake events.
+     * Process CarCoordinate telemetry messages and publish aggregated and enriched data for each Car's position, <br/>
+     * speed, and overtake events.
      *
      * @param carCoordinate message received from the "carCoordinates" topic
      */
     public void processCarCoordinate(final CarCoordinate carCoordinate) {
         if (!cars.containsKey(carCoordinate.getCarIndex())) {
             // create a new Car from a carCoordinate
-            final Car car = new Car(carCoordinate);
+            final Car car = Car.from(carCoordinate);
             cars.put(car.getCarIndex(), car);
-            car.setPosition(cars.size());
+            car.setPosition(cars.size() + 1);
             sortedCarPositions.add(car);
             return;
         }
@@ -53,27 +58,26 @@ public class TelemetryService {
     private void updateCarTotalDistanceAndSpeed(final CarCoordinate carCoordinate) {
         try {
             final Car car = cars.get(carCoordinate.getCarIndex());
-            // calculate the distance between the Car's current Location and the carCoordinate Location
-            final double distance = Haversine.distance(car.getCurLocation().getLatitude(), car.getCurLocation().getLongitude(),
-                    carCoordinate.getLocation().getLatitude(), carCoordinate.getLocation().getLongitude());
 
-            // calculate the Car's speed
-            final double time = (double) (carCoordinate.getTimestamp() - car.getLastUpdateTimestamp());
-            final double metersPerMilli = distance / time;
-            final double metersPerSecond = metersPerMilli * 1000D;
-            final double kilometersPerHour = metersPerSecond * 3600D;
-            final double milesPerHour = kilometersPerHour / 1.609344D;
+            if (car.getLastUpdateTimestamp() >= carCoordinate.getTimestamp()) {
+                // only process messages that are newer than the last update time
+                return;
+            }
+
+            // calculate the distance (in kilometers) between the Car's current Location and the carCoordinate Location
+            final double distance = Haversine.distance(car.getCurLocation(), carCoordinate.getLocation());
+            // calculate the speed (in MPH)
+            final double speed = Speed.speedInMPH(distance, carCoordinate.getTimestamp() - car.getLastUpdateTimestamp());
 
             // update Car
             car.setCurLocation(carCoordinate.getLocation());
-            car.setTotalDistance(car.getTotalDistance() + distance);
+            car.addDistance(distance);
             car.setLastUpdateTimestamp(carCoordinate.getTimestamp());
-            car.setCurSpeedKPH(kilometersPerHour);
-            car.setCurSpeedMPH(milesPerHour);
+            car.setCurSpeedMPH(speed);
 
             // publish a CarStatus speed message
             carStatusService.publish(new CarStatus(car, CarStatus.TypeEnum.SPEED));
-        } catch (Haversine.InputValidationException e) {
+        } catch (final InputValidationException e) {
             log.error(carCoordinate.toString(), e);
         }
     }
@@ -89,7 +93,8 @@ public class TelemetryService {
         }
 
         // sort the Car positions by total distance in descending order
-        Collections.sort(sortedCarPositions, (o1, o2) -> o1.getTotalDistance() > o2.getTotalDistance() ? -1 : (o1.getTotalDistance() < o2.getTotalDistance() ? 1 : 0));
+        Collections.sort(sortedCarPositions, (o1, o2) -> o1.getTotalDistance() > o2.getTotalDistance() ? -1 :
+                (o1.getTotalDistance() < o2.getTotalDistance() ? 1 : 0));
 
         // store the new sortedCarPositions index and publish position updates
         final int[] updatedPositions = new int[sortedCarPositions.size()];
