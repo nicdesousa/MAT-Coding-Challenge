@@ -8,7 +8,7 @@ public final class Speed {
     public static final String ERROR_TIME = "time must be greater than 0";
 
     /**
-     * Calculates the speed in MPH for a distance in KM and time in milliseconds.
+     * Calculates the speed in MPH for a distance in kilometers and time in milliseconds.
      *
      * @param distanceInKilometers
      * @param timeInMillliseconds  must be greater than 0
@@ -25,6 +25,16 @@ public final class Speed {
         final double metersPerSecond = metersPerMilli * 1000D;
         final double kilometersPerHour = metersPerSecond * 3600D;
         return kilometersPerHour / 1.609344D;
+    }
+
+    /**
+     * Converts miles per hour to kilometers per hour
+     *
+     * @param milesPerHour
+     * @return kilometers per hour
+     */
+    public static final double mphToKph(double milesPerHour) {
+        return milesPerHour * 1.609344D;
     }
 
 }

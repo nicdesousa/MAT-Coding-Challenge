@@ -3,9 +3,6 @@ package com.github.nicdesousa.telemetry.util;
 import com.github.nicdesousa.telemetry.domain.Location;
 import org.apache.commons.validator.routines.DoubleValidator;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-
 public final class Haversine {
 
     private Haversine() {
@@ -21,16 +18,6 @@ public final class Haversine {
     public static final double MAX_LATITUDE = 90D;
     public static final double MIN_LONGITUDE = -180D;
     public static final double MAX_LONGITUDE = 180D;
-    // rounding constants for lat/long
-    public static final int ROUND_11_POINT_1_KILOMETERS = 1;
-    public static final int ROUND_1_POINT_1_KILOMETERS = 2;
-    public static final int ROUND_110_METERS = 3;
-    public static final int ROUND_11_METERS = 4;
-    public static final int ROUND_1_POINT_1_METERS = 5;
-    public static final int ROUND_11_CENTIMETERS = 6;
-    public static final int ROUND_11_MILLIMETERS = 7;
-    public static final int ROUND_1_POINT_1_MILLIMETERS = 8;
-    public static final int ROUND_110_MICRONS = 9;
 
     /**
      * Calculates the distance between two latitude and longitude coordinates.
@@ -63,7 +50,7 @@ public final class Haversine {
     }
 
     /**
-     * Calculates the distance between two Location's.
+     * Calculates the distance between two {@see Location}'s.
      *
      * @param startLocation {@see Location}
      * @param endLocation   {@see Location}
@@ -91,17 +78,6 @@ public final class Haversine {
         if (!Haversine.DOUBLE_VALIDATOR.isInRange(longitude, MIN_LONGITUDE, MAX_LONGITUDE)) {
             throw new InputValidationException(ERROR_LONGITUDE);
         }
-    }
-
-    /**
-     * Rounds a distance in kilometers to the specified scale
-     *
-     * @param distance in kilometers
-     * @param scale    {@see Haversine}.ROUND_*
-     * @return distance rounded to scale
-     */
-    public static double roundDistance(final double distance, final int scale) {
-        return BigDecimal.valueOf(distance).setScale(scale, RoundingMode.HALF_UP).doubleValue();
     }
 
 }
