@@ -11,10 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
@@ -112,10 +109,23 @@ public class TelemetryService {
             if (curCar.getCarIndex() != prevCar.getCarIndex() && curCar.getPosition() < prevCar.getPosition()) {
                 // curCar overtakes prevCar
                 eventsService.publish(new Event(curCar.getLastUpdateTimestamp(), "Car " + curCar.getCarIndex()
-                        + " races ahead of Car " + prevCar.getCarIndex() + " in a dramatic overtake."));
+                        + " races ahead of Car " + prevCar.getCarIndex() + " in a dramatic overtake, faster than... "
+                        + fasterThan[rand.nextInt(fasterThan.length)] + "!"));
             }
         }
     }
+
+    // let's have some fun
+    private final Random rand = new Random();
+    private final String[] fasterThan = {"the Stig can buy the newest McLaren",
+            "Clarkson becomes speechless in a McLaren",
+            "the real 007 will swap his car for a McLaren",
+            "a speeding ticket is voided because it's for a McLaren",
+            "Maverick's jet loses to the McLaren P1",
+            "hypercar manufacturers that claim the race isn't fair when they see a McLaren",
+            "the laws of physics are being challenged by McLaren", "a Porsche 918 loses to the McLaren P1",
+            "a Ferrari LaFerrari loses to the McLaren P1", "superbikes lose to a McLaren P1"
+    };
 }
 
 
