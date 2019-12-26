@@ -130,11 +130,13 @@ public class TelemetryService {
                         car.getLaps().size(), minutes, seconds, lapTimeInMs, carLap.getAverageSpeed());
                 log.debug(lapTimeEvent);
                 car.setLapStartTime(carLap.getEndTime());
-                this.eventsService.publish(new Event(carLap.getEndTime(), lapTimeEvent));
+                // use car.getLastUpdateTimestamp() to keep new events synchronized to source timestamps
+                this.eventsService.publish(new Event(car.getLastUpdateTimestamp(), lapTimeEvent));
                 if (newFastestLap) {
                     final String newFastestLapEvent = String.format(FASTEST_LAP_TIME_FORMAT, car.getCarIndex(),
                             minutes, seconds, lapTimeInMs, carLap.getAverageSpeed());
                     log.debug(newFastestLapEvent);
+                    // use car.getLastUpdateTimestamp() to keep new events synchronized to source timestamps
                     this.eventsService.publish(new Event(car.getLastUpdateTimestamp(), newFastestLapEvent));
                 }
             }
