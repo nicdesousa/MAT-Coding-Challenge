@@ -36,8 +36,9 @@ public class TelemetryService {
     public CarStatusService carStatusService;
     @Inject
     public EventsService eventsService;
-    @ConfigProperty(name = "telemetryService.circuitLength", defaultValue = "5901") // defaults to Silverstone Circuit
-    public Integer circuitLengthInMeters;
+    // Please see: geojson/README.md for an explanation of the circuit length
+    @ConfigProperty(name = "telemetryService.circuitLengthInKM", defaultValue = "5.11977")
+    public Float circuitLengthInKM;
 
     // identity key lookup map of Car's for which CarCoordinate messages have been received
     private final Map<Integer, Car> cars = new ConcurrentHashMap<>();
@@ -97,13 +98,12 @@ public class TelemetryService {
             this.carStatusService.publish(new CarStatus(car, CarStatus.TypeEnum.SPEED));
 
             // update CarLap's
-            final double circuitLength = this.circuitLengthInMeters / 1000D;
-            final double circuitLengthLaps = car.getTotalDistance() / circuitLength;
+            final double circuitLengthLaps = car.getTotalDistance() / this.circuitLengthInKM;
             final int completedLaps = (int) (circuitLengthLaps);
             if (car.getLaps().size() < completedLaps) {
                 // perform calculations using offsets, i.e. correct for distance "overshoots"
-                final double offsetDistance = car.getTotalDistance() - (completedLaps * circuitLength);
-                final double offsetPercentage = offsetDistance / circuitLength;
+                final double offsetDistance = car.getTotalDistance() - (completedLaps * this.circuitLengthInKM);
+                final double offsetPercentage = offsetDistance / this.circuitLengthInKM;
                 final long offsetTime = BigDecimal.valueOf(car.getLastUpdateTimestamp() - car.getLapStartTime())
                         .multiply(BigDecimal.valueOf(offsetPercentage)).longValue();
                 final long endTime = car.getLastUpdateTimestamp() - (offsetTime);
@@ -112,7 +112,7 @@ public class TelemetryService {
                 car.getLaps().add(carLap);
                 carLap.setStartTime(car.getLapStartTime());
                 carLap.setEndTime(endTime);
-                carLap.setDistance(circuitLength);
+                carLap.setDistance(this.circuitLengthInKM);
                 long lapTimeInMs = carLap.getEndTime() - carLap.getStartTime();
                 boolean newFastestLap = false;
                 if (lapTimeInMs < this.fastestLapTimeInMs) {
@@ -120,7 +120,7 @@ public class TelemetryService {
                     this.fastestLapCar = car.getCarIndex();
                     newFastestLap = true;
                 }
-                carLap.setAverageSpeed(Speed.speedInMPH(circuitLength, lapTimeInMs));
+                carLap.setAverageSpeed(Speed.speedInMPH(this.circuitLengthInKM, lapTimeInMs));
                 final long minutes = lapTimeInMs / TimeUnit.MINUTES.toMillis(1);
                 lapTimeInMs = lapTimeInMs - TimeUnit.MINUTES.toMillis(minutes);
                 final long seconds = lapTimeInMs / TimeUnit.SECONDS.toMillis(1);

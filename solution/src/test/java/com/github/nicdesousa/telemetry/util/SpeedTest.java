@@ -21,7 +21,6 @@ class SpeedTest {
             fail();
         }
     }
-
     
     /**
      * Test if the {@link Speed#speedInMPH} method works with a negative distance
@@ -44,13 +43,13 @@ class SpeedTest {
      */
     @Test
     void testInvalidTime() {
-        final Throwable e1 = assertThrows(InputValidationException.class, () -> Speed.speedInMPH(1D,-0L));
+        final Throwable e1 = assertThrows(InputValidationException.class, () -> Speed.speedInMPH(1D, -0L));
         assertEquals(Speed.ERROR_TIME, e1.getMessage());
 
-        final Throwable e2 = assertThrows(InputValidationException.class, () -> Speed.speedInMPH(1D,0L));
+        final Throwable e2 = assertThrows(InputValidationException.class, () -> Speed.speedInMPH(1D, 0L));
         assertEquals(Speed.ERROR_TIME, e2.getMessage());
 
-        final Throwable e3 = assertThrows(InputValidationException.class, () -> Speed.speedInMPH(1D,-1L));
+        final Throwable e3 = assertThrows(InputValidationException.class, () -> Speed.speedInMPH(1D, -1L));
         assertEquals(Speed.ERROR_TIME, e3.getMessage());
     }
 
