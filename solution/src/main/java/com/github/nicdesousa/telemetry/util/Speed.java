@@ -11,17 +11,17 @@ public final class Speed {
      * Calculates the speed in MPH for a distance in kilometers and time in milliseconds.
      *
      * @param distanceInKilometers
-     * @param timeInMillliseconds  must be greater than 0
+     * @param timeInMilliseconds   must be greater than 0
      * @return speed in MPH
      * @throws InputValidationException when timeInMillliseconds <= 0
      */
-    public static double speedInMPH(final double distanceInKilometers, final long timeInMillliseconds)
+    public static double speedInMPH(final double distanceInKilometers, final long timeInMilliseconds)
             throws InputValidationException {
-        if (timeInMillliseconds <= 0L) {
+        if (timeInMilliseconds <= 0L) {
             throw new InputValidationException(ERROR_TIME);
         }
 
-        final double metersPerMilli = Math.abs(distanceInKilometers) / timeInMillliseconds;
+        final double metersPerMilli = Math.abs(distanceInKilometers) / timeInMilliseconds;
         final double metersPerSecond = metersPerMilli * 1000D;
         final double kilometersPerHour = metersPerSecond * 3600D;
         return kilometersPerHour / 1.609344D;
