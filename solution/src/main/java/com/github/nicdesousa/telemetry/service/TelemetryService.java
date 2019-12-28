@@ -36,9 +36,9 @@ public class TelemetryService {
     public CarStatusService carStatusService;
     @Inject
     public EventsService eventsService;
-    // Please see: geojson/README.md for an explanation of the circuit length
-    @ConfigProperty(name = "telemetryService.circuitLengthInKM", defaultValue = "5.11977")
-    public Float circuitLengthInKM;
+    // please see: geojson/README.md for an explanation of the circuit length
+    @ConfigProperty(name = "telemetryService.circuitLengthInKM", defaultValue = "5.119771376975698")
+    public Double circuitLengthInKM;
 
     // identity key lookup map of Car's for which CarCoordinate messages have been received
     private final Map<Integer, Car> cars = new ConcurrentHashMap<>();
