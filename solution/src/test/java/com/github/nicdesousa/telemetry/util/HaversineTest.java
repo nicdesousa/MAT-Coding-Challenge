@@ -34,10 +34,10 @@ public class HaversineTest {
         }
     }
 
-    @Test
     /**
      * Test if the {@link Haversine#distance} method calculates the total distance for an array of coordinates correctly
      */
+    @Test
     void testCircuitLengthCalculation() {
         final ObjectMapper mapper = new ObjectMapper();
         final InputStream is = this.getClass().getResourceAsStream("/silverstone.json");

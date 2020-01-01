@@ -17,4 +17,4 @@ The `Telemetry Solution` uses the latter as the circuit length, since the first 
 
 ## Implementation and Testing
 
-Please review [HaversineTest.testCircuitGeometry()](../src/test/java/com/github/nicdesousa/telemetry/util/HaversineTest.java) for the implementation and testing code.
+Please review [HaversineTest.testCircuitLengthCalculation()](../src/test/java/com/github/nicdesousa/telemetry/util/HaversineTest.java) for the implementation and testing code.
