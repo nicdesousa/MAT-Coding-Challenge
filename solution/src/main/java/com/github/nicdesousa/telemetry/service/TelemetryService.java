@@ -37,7 +37,7 @@ public class TelemetryService {
     @Inject
     public EventsService eventsService;
     // please see: geojson/README.md for an explanation of the circuit length
-    @ConfigProperty(name = "telemetryService.circuitLengthInKM", defaultValue = "5.119771376975698")
+    @ConfigProperty(name = "telemetryService.circuitLengthInKM", defaultValue = "5.119771376289225")
     public Double circuitLengthInKM;
 
     // identity key lookup map of Car's for which CarCoordinate messages have been received
@@ -78,12 +78,15 @@ public class TelemetryService {
         try {
             final Car car = this.cars.get(carCoordinate.getCarIndex());
 
-            if (car.getLastUpdateTimestamp() >= carCoordinate.getTimestamp()) {
-                // only process messages that are newer than the last update time
+            if (carCoordinate.getTimestamp() <= car.getLastUpdateTimestamp()) {
+                // only process messages that are newer than the car's last update time
+                // log an error since this should not happen
+                log.error("Received carCoordinate.getTimestamp %d <= car.getLastUpdateTimestamp %d",
+                        carCoordinate.getTimestamp(), car.getLastUpdateTimestamp());
                 return;
             }
 
-            // calculate the distance (in kilometers) between the Car's current Location and the carCoordinate Location
+            // calculate the distance (in kilometres) between the Car's current Location and the carCoordinate Location
             final double distance = Haversine.distance(car.getCurLocation(), carCoordinate.getLocation());
             // calculate the speed (in MPH)
             final double speed = Speed.speedInMPH(distance, carCoordinate.getTimestamp() - car.getLastUpdateTimestamp());
@@ -97,46 +100,47 @@ public class TelemetryService {
             // publish a CarStatus speed message
             this.carStatusService.publish(new CarStatus(car, CarStatus.TypeEnum.SPEED));
 
-            // update CarLap's
+            // calculate Car lap(s)
             final double circuitLengthLaps = car.getTotalDistance() / this.circuitLengthInKM;
             final int completedLaps = (int) (circuitLengthLaps);
             if (car.getLaps().size() < completedLaps) {
-                // perform calculations using offsets, i.e. correct for distance "overshoots"
+                // perform lap calculations using offsets, i.e. correct for distance "overshoots"
                 final double offsetDistance = car.getTotalDistance() - (completedLaps * this.circuitLengthInKM);
                 final double offsetPercentage = offsetDistance / this.circuitLengthInKM;
                 final long offsetTime = BigDecimal.valueOf(car.getLastUpdateTimestamp() - car.getLapStartTime())
                         .multiply(BigDecimal.valueOf(offsetPercentage)).longValue();
                 final long endTime = car.getLastUpdateTimestamp() - (offsetTime);
 
+                // create a new CarLap for a Car
                 final CarLap carLap = new CarLap();
                 car.getLaps().add(carLap);
                 carLap.setStartTime(car.getLapStartTime());
                 carLap.setEndTime(endTime);
                 carLap.setDistance(this.circuitLengthInKM);
-                long lapTimeInMs = carLap.getEndTime() - carLap.getStartTime();
-                boolean newFastestLap = false;
+                final long lapTimeInMs = carLap.getEndTime() - carLap.getStartTime();
+                carLap.setAverageSpeed(Speed.speedInMPH(this.circuitLengthInKM, lapTimeInMs));
+
+                // convert lapTimeInMS into lapMinutes:lapSeconds.lapMillis
+                final long lapMinutes = lapTimeInMs / TimeUnit.MINUTES.toMillis(1);
+                final long lapSeconds = (lapTimeInMs - TimeUnit.MINUTES.toMillis(lapMinutes)) / TimeUnit.SECONDS.toMillis(1);
+                final long lapMillis = lapTimeInMs - TimeUnit.MINUTES.toMillis(lapMinutes) - TimeUnit.SECONDS.toMillis(lapSeconds);
+                final String lapTimeEvent = String.format(LAP_TIME_FORMAT, car.getCarIndex(),
+                        car.getLaps().size(), lapMinutes, lapSeconds, lapMillis, carLap.getAverageSpeed());
+                log.debug(lapTimeEvent);
+                car.setLapStartTime(carLap.getEndTime());
+
+                // publish an Event message for lap time
+                // use car.getLastUpdateTimestamp() to keep emitted events synchronized to source timestamps
+                this.eventsService.publish(new Event(car.getLastUpdateTimestamp(), lapTimeEvent));
+
                 if (lapTimeInMs < this.fastestLapTimeInMs) {
                     this.fastestLapTimeInMs = lapTimeInMs;
                     this.fastestLapCar = car.getCarIndex();
-                    newFastestLap = true;
-                }
-                carLap.setAverageSpeed(Speed.speedInMPH(this.circuitLengthInKM, lapTimeInMs));
-                final long minutes = lapTimeInMs / TimeUnit.MINUTES.toMillis(1);
-                lapTimeInMs = lapTimeInMs - TimeUnit.MINUTES.toMillis(minutes);
-                final long seconds = lapTimeInMs / TimeUnit.SECONDS.toMillis(1);
-                lapTimeInMs = lapTimeInMs - TimeUnit.SECONDS.toMillis(seconds);
-
-                final String lapTimeEvent = String.format(LAP_TIME_FORMAT, car.getCarIndex(),
-                        car.getLaps().size(), minutes, seconds, lapTimeInMs, carLap.getAverageSpeed());
-                log.debug(lapTimeEvent);
-                car.setLapStartTime(carLap.getEndTime());
-                // use car.getLastUpdateTimestamp() to keep new events synchronized to source timestamps
-                this.eventsService.publish(new Event(car.getLastUpdateTimestamp(), lapTimeEvent));
-                if (newFastestLap) {
                     final String newFastestLapEvent = String.format(FASTEST_LAP_TIME_FORMAT, car.getCarIndex(),
-                            minutes, seconds, lapTimeInMs, carLap.getAverageSpeed());
+                            lapMinutes, lapSeconds, lapMillis, carLap.getAverageSpeed());
                     log.debug(newFastestLapEvent);
-                    // use car.getLastUpdateTimestamp() to keep new events synchronized to source timestamps
+                    // publish an Event message for new fastest lap time
+                    // use car.getLastUpdateTimestamp() to keep emitted events synchronized to source timestamps
                     this.eventsService.publish(new Event(car.getLastUpdateTimestamp(), newFastestLapEvent));
                 }
             }

@@ -1,23 +1,20 @@
-# GeoJSON Distance Calculation
+# GeoJSON Circuit Length Calculation
 
 ## Overview
 
-The `GPS Source` service uses a GeoJSON file with `LineString` coordinates to represent a lap around the Silverstone Circuit.
+The MAT `GPS Source` service uses a GeoJSON file ([silverstone.geojson](http://geojson.tools/?url=https://raw.githubusercontent.com/nicdesousa/MAT-Coding-Challenge/master/solution/geojson/silverstone.geojson)) with `LineString` coordinates to represent a lap around the Silverstone Circuit as an array of line segments.
 
-The source data (`silverstone.json`) results in a circuit length of `~5.099 km`, while the lap distance calculation of Car's in the `Telemetry Solution` (i.e. `silverstone_closed.json`) is `~5.119 km`. 
-
-This is because the Haversine distance calculation uses two Location updates that, in this case, closes the polygon:
+As per the highlighted areas in the image below, the GeoJSON source file's line segments do not result in a "closed" polygon:
 
 ![](../../images/Silverstone-geojson.png)
 
-```console
-$ node calcDistance.js 
-Silverstone.geojson        distance: 5.099633744757203 km
-Silverstone_closed.geojson distance: 5.119771376975699 km
-```
+The total length of the line segments (defined by the coordinates) can be calculated with the Haversine formula, where:
 
-The current circuit length for [Silverstone](https://live.planetf1.com/british-grand-prix/silverstone-circuit/10/41146/circuit-info) is `5.901 km`.
+- The total length of the line segments, as shown on the left-hand side of the image, is: `5.099633744071716 km`
+- If we now "close" the polygon ([silverstone_closed.geojson](http://geojson.tools/?url=https://raw.githubusercontent.com/nicdesousa/MAT-Coding-Challenge/master/solution/geojson/silverstone_closed.geojson)), as shown on right-hand side of the image, the total length is: `5.119771376289225 km`
 
-Using the current circuit length would result in an incorrect finishing line being used for updates/events that are shown in the Webapp.
+The `Telemetry Solution` uses the latter as the circuit length, since the first `carCoordinate` sent after the completion of a loop in the `GPS Source` "closes" the polygon.
 
-For this reason the Telemetry Solution uses `~5.119 km` as the circuit length to try and keep everything synchronized.
+## Implementation and Testing
+
+Please review [HaversineTest.testCircuitGeometry()](../src/test/java/com/github/nicdesousa/telemetry/util/HaversineTest.java) for the implementation and testing code.

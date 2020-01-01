@@ -1,8 +1,0 @@
-{
-  "name": "calcDistance",
-  "main": "calcDistance.js",
-  "version": "1.0.0",
-  "dependencies": {
-    "geojson-length": "^0.1.1"
-  }
-}

@@ -10,7 +10,7 @@ public final class Haversine {
     }
 
     private static final DoubleValidator DOUBLE_VALIDATOR = DoubleValidator.getInstance();
-    // the volumetric mean radius of the Earth is 6371 kilometers
+    // the volumetric mean radius of the Earth is 6371 kilometres
     public static final double EARTH_RADIUS_IN_KM = 6371D;
     public static final String ERROR_LATITUDE = "Latitude is not within -90 and 90";
     public static final String ERROR_LONGITUDE = "Longitude is not within -180 and 180";
@@ -29,7 +29,7 @@ public final class Haversine {
      * @param startLong Starting longitude (within -180D and +180D)
      * @param endLat    Ending latitude (within -90D and +90D)
      * @param endLong   Ending longitude (within -180D and +180D)
-     * @return Distance in kilometers
+     * @return Distance in kilometres
      * @throws InputValidationException for invalid parameter values
      * @see <a href="https://en.wikipedia.org/wiki/Haversine_formula">Haversine formula</a>
      * @see <a href="https://imgs.xkcd.com/comics/coordinate_precision_2x.png">Coordinate digits precision</a>
@@ -54,7 +54,7 @@ public final class Haversine {
      *
      * @param startLocation {@see Location}
      * @param endLocation   {@see Location}
-     * @return Distance in kilometers
+     * @return Distance in kilometres
      * @throws InputValidationException for invalid parameter values
      */
     public static double distance(final Location startLocation, final Location endLocation)
