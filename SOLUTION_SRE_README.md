@@ -5,36 +5,44 @@
 ![](./images/MAT-Solution-Overview.png)
 
 The `Telemetry Solution` for the coding challenge has been implemented in Java and docker-compose, with:
+
 - the [Quarkus](https://quarkus.io/) framework,
 - and [Apache Kafka](https://kafka.apache.org/) as the streaming platform and data store.
 
-### Architectural Design Decisions
+### Solutions Architecture: Design and Implementation Decisions
 
 - Kafka as both the streaming platform and persistent data store (/archive):
-    - **Motivation**
+
+    **Motivation**
     - Using Kafka for persistent storage may seem counter-intuitive at first. Kindly note, however, that Kafka is a `streaming platform` and not a "traditional" `messaging system` where messages are deleted from queues once they've been successfully consumed.
     - There are three primary differences between Kafka and traditional messaging systems:
         - Kafka stores a persistent log which can be re-read and kept indefinitely.
         - Kafka is built as a modern distributed system: it runs as a cluster, can expand or contract elastically, and replicates data internally for fault-tolerance and high-availability.
         - Kafka is built to allow real-time stream processing, not just processing of a single message at a time. This allows working with data streams at a much higher level of abstraction.
-    - **Benefits**
+
+    **Benefits**
     - Stream processing jobs perform computation(s) from a stream of data coming in via Kafka. When the `logic of the stream processing code changes`, you often want to recompute the results. A very simple method to accomplish this is to reset the topic offset (either to zero or a specific starting time, etc.) so that the application can recompute the results with the new code. (I.e. [The Kappa Architecture](https://www.oreilly.com/radar/questioning-the-lambda-architecture/))
     - We can have an in-memory cache in each instance of the application that is fed by updates from Kafka. A very simple way of building this is to make the Kafka topic log compacted, and have the application simply start fresh at `offset zero` whenever it restarts to populate its cache.
     - Kafka is often used to capture and distribute a stream of "database" updates (this is often called Change Data Capture or CDC). Applications that consume this data in steady state only need the newest changes. New applications, however, need start with a full dump or snapshot of data. Performing a full dump of a large production database is, however, often a very delicate (performance impacts, etc.) and time consuming operation. Enabling log compaction on the topic(s) containing the stream of changes allows consumers of this data to perform simple reloads by resetting to offset to zero.
-    - **Implications**
+
+    **Implications**
     - Only the CarCoordinate MQTT source data will be published (and persisted) in the `carCoordinate` Kafka topic.
-    - Stream processing outputs (i.e. CarStatus and Events MQTT messages) are ephemeral and will **not** be stored in Kafka.
+    - Stream processing outputs (i.e. `CarStatus` and `Events` MQTT messages) will not be stored in Kafka.
+        - If this becomes a requirement in the future, the solution can be extended to assign session ID's and then store all of the stream processing outputs in kafka topics as well.
     - This architecture enables the solution to reset the offset for the `carCoordinate` topic to zero (when required) in order to recompute the results (i.e. CarStatus and Events MQTT messages) when code/logic changes need to be implemented.
 
-- Quarkus
-    - **Motivation**
+- Quarkus as the (Java) framework for implementing the application code:
+
+    **Motivation**
     - Quarkus provides all of the required functionality to build the solution.
     - I haven't used Quarkus before and decided that this coding challenge presents me with a good opportunity to learn a new framework.
-    - **Benefits**
+
+    **Benefits**
     - Quarkus is an alternative to similar, but "older" frameworks, and provides excellent development functionalities and supports integration with cloud providers, containerisation technologies and serverless (Lambda) application architectures.
     - Quarkus can compile Java bytecode to native OS binaries with extremely impressive results:
     ![](https://quarkus.io/assets/images/quarkus_metrics_graphic_bootmem_wide.png)
-    - **Implications**
+
+    **Implications**
     - Using Quarkus may require a relatively small invest of time to learn a new framework.
     - The building of [native binaries](https://quarkus.io/guides/building-native-image) can be very slow. As such, it is recommended to build OpenJVM-based container images during development and to build native images for deployment on longer-lived environments.
 
@@ -79,6 +87,7 @@ The code includes Unit Tests for the:
 
 * [Haversine](./solution/src/test/java/com/github/nicdesousa/telemetry/util/HaversineTest.java) formula implementation,
 * [Speed](./solution/src/test/java/com/github/nicdesousa/telemetry/util/SpeedTest.java) calculations.
+* [Circuit length](./solution/geojson/README.md) calculation from GeoJSON coordinates.
 
 The source code can be compiled and tested by running:
 
@@ -91,7 +100,7 @@ cd solution
 
 ### Deploying and running the code on AWS
 
-> Note: I would normally automate the provisioning and deployment with CF, TF, CLI, etc., but doing so (in this case) would require **you** to trust and then run potentially *dodgy* automation code and/or templates (etc.) on *your* AWS services/resources. This is obviously an extremely bad idea, and I wouldn't expect or recommend that anyone does this.
+> Note: I would normally automate the provisioning and deployment with CloudFormation, Terraform, the CLI-API, etc., but doing so (in this case) would require you to run potentially *dodgy* automation code and/or templates (etc.) from a third-party with privileged access to *your* AWS services/resources. This is obviously an extremely bad idea... so I've provided simple step-by-step instructions instead.
 
 1. Login to your AWS Console and change to the `London` region: [https://aws.amazon.com](https://aws.amazon.com)
 2. [Click here](https://eu-west-2.console.aws.amazon.com/ec2/v2/home?region=eu-west-2#LaunchInstanceWizard:) to create a new EC2 instance
@@ -124,7 +133,7 @@ echo "/swapfile none swap sw 0 0" >> /etc/fstab
 # run docker-compose when the instance boots
 echo "runuser -l ec2-user -c 'cd /home/ec2-user/MAT-Coding-Challenge/; docker-compose up -d'" >> /etc/rc.local
 chmod +x /etc/rc.d/rc.local
-# "reboot" to apply the instance changes
+# "restart" to apply the instance changes
 reboot
 ```
 5. Click `Review and Launch`
@@ -135,7 +144,7 @@ reboot
 |HTTP|TCP|80|0.0.0.0/0|MAT Fan App HTTP|
 |HTTPS|TCP|443|0.0.0.0/0|MAT Fan App Websocket|
 
->Note: The solution enables using ports 80 and 443 instead of 8084 and 8080 to allow access for clients behind a restrictive (network or corporate) proxy server.
+>Note: The solution (see [docker-compose](./docker-compose.yml#L32)) enables using ports 80 and 443 instead of 8084 and 8080 to allow access for clients behind a restrictive (network or corporate) proxy server.
 
 7. Click `Review and Launch` and then `Launch`
 8. Click `View Instances` and wait ±5 minutes for the provisioning and deployment to complete.
@@ -169,4 +178,3 @@ In this case, we use the existing containerised services (i.e. no code changes) 
 ![](./images/EC2-Instance-Metrics.png)
 
 ![](./images/EC2-Instance-HTOP.png)
-
