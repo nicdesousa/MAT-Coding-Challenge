@@ -31,6 +31,9 @@ The `Telemetry Solution` for the coding challenge has been implemented in Java a
         - If this becomes a requirement in the future, the solution can be extended to assign session ID's and then store all of the stream processing outputs in kafka topics as well.
     - This architecture enables the solution to reset the offset for the `carCoordinate` topic to zero (when required) in order to recompute the results (i.e. CarStatus and Events MQTT messages) when code/logic changes need to be implemented.
 
+    **Alternatives**
+    - [InfluxDB](https://www.influxdata.com/blog/influxdb-clustering/) is one of the best time series databases. The enterprise version is, however, required for features such as DB clustering; which is a critical non-functional requirement for well-architectured cloud-based solutions. As such, the FOSS version is not suitable for this solution.
+
 - Quarkus as the (Java) framework for implementing the application code:
 
     **Motivation**
