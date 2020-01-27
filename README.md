@@ -1,6 +1,6 @@
 # MAT: Fan Engagement Coding + AWS Challenge
 
-The challenge is descibed in [./SRE_README.md](SRE_README.md).
+The challenge is descibed in [SRE_README.md](./SRE_README.md).
 
 ## Solution
 
